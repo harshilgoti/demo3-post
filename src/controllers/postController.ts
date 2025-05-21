@@ -1,11 +1,13 @@
 import { NextFunction, Request, Response } from "express";
-import { asyncHandlers } from "../utils/asyncHandelrs";
+import { asyncHandlers } from "../utils/asyncHandlers";
 import { Post } from "../models/postModal";
 import AppResponse from "../utils/AppResponse";
+import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
 
 const postList = asyncHandlers(
   async (req: Request, res: Response, next: NextFunction) => {
-    const posts = await Post.find().populate("comments");
+    const posts = await Post.find().populate("comments.userId");
 
     if (!posts) {
       throw Error("Post not found");
@@ -93,20 +95,26 @@ const commentPost = asyncHandlers(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const { title } = req.body;
+    const { accessToken } = req.cookies;
 
     if (!id) {
       throw Error("Id not found");
     }
 
-    const comment = await Post.findByIdAndUpdate(
+    const decodeToken = jwt.verify(accessToken, process.env.JWT_SECRET!) as {
+      _id: string;
+    };
+    const { _id } = decodeToken;
+
+    const comment = {
+      title,
+      userId: new mongoose.Types.ObjectId(_id),
+    };
+
+    const post = await Post.findByIdAndUpdate(
       id,
       {
-        $push: {
-          comments: {
-            title,
-            userId: id,
-          },
-        },
+        $push: { comments: comment },
       },
       {
         new: true,
@@ -116,8 +124,6 @@ const commentPost = asyncHandlers(
     if (!comment) {
       throw Error("Comment not added");
     }
-
-    const post = await Post.findById(comment._id);
 
     return res
       .status(201)

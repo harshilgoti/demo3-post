@@ -10,8 +10,8 @@ export interface IUser extends Document {
   avatar?: string;
   refreshToken?: string;
   isPasswordCorrect(password: string): Promise<boolean>;
-  generateAccessToken(): string;
-  generateRefreshToken(): string;
+  generateAccessToken(): Promise<string>;
+  generateRefreshToken(): Promise<string>;
 }
 
 export interface IUserModal extends Model<IUser> {}
@@ -51,12 +51,12 @@ userSchema.methods.isPasswordCorrect = async function (password: string) {
 };
 
 userSchema.methods.generateAccessToken = async function () {
-  return jwt.sign({ _id: this._id }, process.env.JWT_SECRET!, {
+  return await jwt.sign({ _id: this._id }, process.env.JWT_SECRET!, {
     expiresIn: "1d",
   });
 };
 userSchema.methods.generateRefreshToken = async function (password: string) {
-  return jwt.sign({ _id: this._id }, process.env.JWT_SECRET!, {
+  return await jwt.sign({ _id: this._id }, process.env.JWT_SECRET!, {
     expiresIn: "3d",
   });
 };

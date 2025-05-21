@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { asyncHandlers } from "../utils/asyncHandelrs";
+import { asyncHandlers } from "../utils/asyncHandlers";
 import { User } from "../models/userModal";
 import AppResponse from "../utils/AppResponse";
 import mongoose from "mongoose";
@@ -10,8 +10,8 @@ const generateToken = async (id: mongoose.Types.ObjectId) => {
     throw new Error("User not found");
   }
 
-  const accessToken = user.generateAccessToken();
-  const refreshToken = user.generateAccessToken();
+  const accessToken = await user.generateAccessToken();
+  const refreshToken = await user.generateAccessToken();
 
   user.refreshToken = refreshToken;
   return { accessToken, refreshToken };
