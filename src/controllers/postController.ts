@@ -3,11 +3,36 @@ import { asyncHandlers } from "../utils/asyncHandlers";
 import { Post } from "../models/postModal";
 import AppResponse from "../utils/AppResponse";
 import mongoose from "mongoose";
-import jwt from "jsonwebtoken";
+import { AuthRequest } from "../middleware/user.middleware";
 
 const postList = asyncHandlers(
   async (req: Request, res: Response, next: NextFunction) => {
-    const posts = await Post.find().populate("comments.userId");
+    // const posts = await Post.find().populate("comments.userId");
+    const posts = await Post.aggregate([
+      {
+        $lookup: {
+          from: "comments",
+          localField: "_id",
+          foreignField: "postId",
+          as: "comments",
+          pipeline: [
+            {
+              $lookup: {
+                from: "User",
+                localField: "userId",
+                foreignField: "_id",
+                as: "user",
+              },
+            },
+            {
+              $addFields: {
+                user: { $first: "$user" },
+              },
+            },
+          ],
+        },
+      },
+    ]);
 
     if (!posts) {
       throw Error("Post not found");
@@ -92,19 +117,14 @@ const disLikePost = asyncHandlers(
 );
 
 const commentPost = asyncHandlers(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const { title } = req.body;
-    const { accessToken } = req.cookies;
+    const { _id } = req?.user ?? {};
 
-    if (!id) {
+    if (!_id) {
       throw Error("Id not found");
     }
-
-    const decodeToken = jwt.verify(accessToken, process.env.JWT_SECRET!) as {
-      _id: string;
-    };
-    const { _id } = decodeToken;
 
     const comment = {
       title,

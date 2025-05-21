@@ -4,6 +4,7 @@ import cookie from "cookie-parser";
 import { connectDb } from "./db/connect";
 import userRoute from "./routes/userRoutes";
 import postRoute from "./routes/postRoute";
+import commentRoute from "./routes/commentRoute";
 
 connectDb();
 const app = express();
@@ -13,6 +14,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/auth", userRoute);
 app.use("/post", postRoute);
+app.use("/comment", commentRoute);
 
 app.get("/", (req, res) => {
   res.send("Hello world");
